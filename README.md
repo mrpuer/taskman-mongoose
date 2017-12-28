@@ -1,2 +1,2 @@
 # taskman-mongoose
-Tasl Manager Web App
+Task Manager Web App

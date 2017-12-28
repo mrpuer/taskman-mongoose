@@ -84,22 +84,23 @@ $(document).ready(function() {
     delTask(id);
   });
 
+  // жмем на кнопку поиска
+  $("#search-button").on('click', function() {
+    const what = $('#search-query').val();
+    const where = $('#search-select').val();
+    searchUser(what, where);
+  });
+
+  //жмем на кнопку ресет поиск
+  $('#reset-search').click(function() {
+    $('#search-query').val('');
+    $('#search-select').val('name');
+    makeTasksList();
+  });
+
   makeUsersList();
   makeTasksList();
 });
-
-//   $("#search-button").on('click', function() {
-//     const query = $('#search-form').val();
-//     const where = $('#search-select').val();
-//     searchUser(query, where);
-//   });
-
-//   $('#body').on('click', '#reset-button', function() {
-//     alert('aaa');
-//   });
-
-//   //getUsers();
-// });
 
 // отправка запроса серверу
 const sendReq = function (reqUrl, method, reqData, callback) {
@@ -147,14 +148,16 @@ const getAllUsers = function(callback) {
   });
 };
 
-// формируем таблицу контактов
+// формируем таблицу юзеров
 const makeUsersList = function() {
   $('#users-list').empty();
   getAllUsers(function(users) {
+    console.log(users);
     $.each(users, function (index, user) {
       const content = `<tr id='tr-user${user.id}'>
                         <td>${index + 1}</td>
                         <td id="username">${user.name}</td>
+                        <td id="user-tasks">${user.tasks}</td>
                         <td><span class="badge badge-warning" id="user-delete" data-id="${user.id}">
                         Delete</span>
                         <span class="badge badge-info" id="user-edit" data-id="${user.id}">Edit</span></td>
@@ -327,21 +330,24 @@ const editTask = function (taskID) {
   });
 };
 
-// // поиск
-// const searchUser = function (what, where) {
-//   sendReq(`/api/search/`, 'GET', { what, where }, function (result) {
-//     $('#contacts-list').empty();
-//     $.each(result, function (index, user) {
-//       const content = `<tr class="table-dark" id="contact${user.id}">
-//                         <td>${index + 1}</td>
-//                         <td id="fname${user.id}">${user.firstName}</td>
-//                         <td id="lname${user.id}">${user.lastName}</td>
-//                         <td id="phone${user.id}">${user.phone}</td>
-//                         <td><span class="badge badge-danger" id="user-delete" data-id="${user.id}">
-//                         Delete</span>
-//                         <span class="badge badge-info" id="user-edit" data-id="${user.id}">Edit</span></td>
-//                         </tr>`;
-//       $('#contacts-list').append(content);
-//     });
-//   });
-// };
+// поиск
+const searchUser = function (what, where) {
+  sendReq(`/api/search/`, 'GET', { what, where }, function (tasks) {
+    $('#tasks-list').empty();
+    $.each(tasks, function (index, task) {
+      const trClass = task.status ? 'table-success' : 'table-danger';
+      const statusText = task.status ? 'Active' : 'Disabled' ;
+      const content = `<tr class="${trClass}" id="tr${task.id}" data-id="${task.userId}">
+                        <td>${index + 1}</td>
+                        <th id="task-name" scope="row">${task.name}</td>
+                        <td id="task-desc">${task.desc}</td>
+                        <td id="task-stat">${statusText}</td>
+                        <td>${task.userName}</td>
+                        <td><span class="badge badge-warning" id="task-delete" data-id="${task.id}">
+                        Delete</span>
+                        <span class="badge badge-info" id="task-edit" data-id="${task.id}">Edit</span></td>
+                        </tr>`;
+      $('#tasks-list').append(content);
+    });
+  });
+};

@@ -43,21 +43,6 @@ const tasksSchema = mongoose.Schema({
 const Users = mongoose.model('users', usersSchema);
 const Tasks = mongoose.model('tasks', tasksSchema);
 
-
-// // подключение к бд
-// const newDbConnection = (callback) => {
-//   MongoClient.connect(mongoURL, (err, db) => {
-//     if (err) {
-//       console.log(`Cant connect to DB. Error: ${err}`);
-//       res.send('Sorry. Cant connect to DB...');
-//     } else {
-//       const coll = db.collection('contacts');
-//       callback(coll);
-//     }
-//   });
-  
-// };
-
 // добавление контакта
 restAPI.post('/api/contacts/', (req, res) => {
   Users.find().sort({$natural:-1}).limit(1).exec((err, users) => {
@@ -99,12 +84,25 @@ restAPI.post('/api/tasks/', (req, res) => {
 
 // список контактов
 restAPI.get('/api/users/', (req, res) => {
-  Users.find((err, doc) => {
+  Users.aggregate([
+    {
+      $lookup: {
+        from: 'tasks',
+        localField: 'id',
+        foreignField: 'user',
+        as: 'userTasks'
+      }
+    }
+    // {
+    //   $project: { id: 1, name: 1, desc:1, status:1, userName: '$userInfo.name', userId: '$userInfo.id' }
+    // },
+    // { $match: query }
+  ], (err, result) => {
     if (err) {
-      console.log(err);
-      res.send('Sorry. DB Error.');
+      console.log(`Cant connect to DB. Error: ${err}`);
+      res.send('Sorry. Cant connect to DB...');
     } else {
-      res.send(doc);
+      res.send(result);
     }
   });
 });
@@ -182,21 +180,32 @@ restAPI.put('/api/tasks/:id', (req, res) => {
   });
 });
 
-// //поиск
-// restAPI.get('/api/search/', (req, res) => {
-//   const searchData = {};
-//   searchData[req.query.where] = req.query.what
-//   newDbConnection((collection) => {
-//     collection.find(searchData).toArray((err, docs) => {
-//       if (err) {
-//         console.log(`Cant connect to DB. Error: ${err}`);
-//         res.send('Sorry. Cant connect to DB...');
-//       } else {
-//         res.send(docs);
-//       }
-//     });
-//   });
-// });
+//поиск
+restAPI.get('/api/search/', (req, res) => {
+  const query = {};
+  query[req.query.where] = { $regex: req.query.what, $options: 'i' };
+  Tasks.aggregate([
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'user',
+        foreignField: 'id',
+        as: 'userInfo'
+      }
+    },
+    {
+      $project: { id: 1, name: 1, desc:1, status:1, userName: '$userInfo.name', userId: '$userInfo.id' }
+    },
+    { $match: query }
+  ], (err, result) => {
+    if (err) {
+      console.log(`Cant connect to DB. Error: ${err}`);
+      res.send('Sorry. Cant connect to DB...');
+    } else {
+      res.send(result);
+    }
+  });
+});
 
 app.use('/', restAPI);
 app.listen(3000, () => process.stdout.write('Server is running...\n'));

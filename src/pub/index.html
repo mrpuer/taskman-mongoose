@@ -149,17 +149,15 @@
             <!-- форма поиска -->
               <div id="search-form" class="form-inline">
             <form class="form-inline my-2 my-lg-0">
-                <input class="form-control mr-sm-2" type="text" placeholder="Search contacts" id="search-form">
+                <input class="form-control mr-sm-2" type="text" placeholder="Search contacts" id="search-query">
                 <div class="form-group">
                     <select class="custom-select" id="search-select">
-                      <option selected="">Select option</option>
-                      <option value="firstName">First Name</option>
-                      <option value="lastName">Last Name</option>
-                      <option value="phone">Phone</option>
+                      <option value="name">Task Name</option>
+                      <option value="desc">Task Description</option>
                     </select>
                   </div>
                 <button class="btn btn-info my-2 my-sm-0 mr-sm-2" type="button" id="search-button">Search</button>
-                <button class="btn btn-secondary" type="button" id="reset-button">Reset</button>
+                <button class="btn btn-secondary" type="button" id="reset-search">Reset</button>
               </form>
             </div>
             </div>
@@ -204,6 +202,7 @@
           <tr>
             <th scope="col">#</th>
             <th scope="col">Name</th>
+            <th scope="col">Tasks</th>
             <th scope="col">Options</th>
           </tr>
         </thead>
