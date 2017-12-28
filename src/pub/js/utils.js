@@ -240,6 +240,7 @@ const addTask = function() {
     } else {
       getAlert('add');
       makeTasksList();
+      makeUsersList();
     }
   });
 };

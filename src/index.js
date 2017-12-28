@@ -92,10 +92,13 @@ restAPI.get('/api/users/', (req, res) => {
         foreignField: 'user',
         as: 'userTasks'
       }
+    },
+    {
+      $project: { id: 1, name: 1, tasks: { $size: '$userTasks' }}
+    },
+    {
+      $sort: { tasks: -1 }
     }
-    // {
-    //   $project: { id: 1, name: 1, desc:1, status:1, userName: '$userInfo.name', userId: '$userInfo.id' }
-    // },
     // { $match: query }
   ], (err, result) => {
     if (err) {
