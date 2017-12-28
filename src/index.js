@@ -5,7 +5,9 @@ const mongodb = require('mongodb');
 const MongoClient = mongodb.MongoClient;
 const mongoURL = 'mongodb://localhost:27017/taskman';
 
+
 const mongoose = require('mongoose');
+mongoose.Promise = global.Promise;
 mongoose.connect('mongodb://localhost:27017/taskman', { useMongoClient: true });
 const db = mongoose.connection;
 
@@ -26,20 +28,20 @@ db.once('open', function() {
 });
 
 const usersSchema = mongoose.Schema({
-  name: String
+  name: String,
+  id: Number
 });
 
 const tasksSchema = mongoose.Schema({
+  id: Number,
   name: String,
-  description: String,
+  desc: String,
   status: Boolean,
-  user: String
+  user: Number
 });
 
-const users = mongoose.model('users', usersSchema);
-const tasks = mongoose.model('tasks', tasksSchema);
-
-var vovka = new users({ name: 'Vovka' });
+const Users = mongoose.model('users', usersSchema);
+const Tasks = mongoose.model('tasks', tasksSchema);
 
 
 // // подключение к бд
@@ -56,80 +58,129 @@ var vovka = new users({ name: 'Vovka' });
   
 // };
 
-// // добавление контакта
-// restAPI.post('/api/contacts/', (req, res) => {
-//   const newContact = {
-//     firstName: req.body.fname,
-//     lastName: req.body.lname,
-//     phone: req.body.phone,
-//   };
-//   newDbConnection((collection) => {
-//     const lastContact = collection.find().sort({$natural:-1}).limit(1);
-//     lastContact.toArray((err, doc) => {
-//       if (!doc.length) {
-//         newContact.id = '1';
-//       } else {
-//         newContact.id = String(+doc[0].id + 1);
-//         collection.insertOne(newContact, (err, result) => {
-//           if (err) {
-//             console.log(`Cant connect to DB. Error: ${err}`);
-//             res.send('Sorry. Cant connect to DB...');
-//           } else {
-//             res.send(result);
-//           }
-//         });
-//       }
-//     });
-//   });
-// });
+// добавление контакта
+restAPI.post('/api/contacts/', (req, res) => {
+  Users.find().sort({$natural:-1}).limit(1).exec((err, users) => {
+    const id = (users.length === 0) ? 1 : users[0].id + 1;
+    const newUser = new Users({ id, name: req.body.name });
+    newUser.save((err, newUser) => {
+      if (err) {
+        console.log(`Cant connect to DB. Error: ${err}`);
+        res.send('Sorry. Cant connect to DB...');
+      } else {
+        res.send('ok');
+      }
+    });
+  });
+});
 
-// // список контактов
-// restAPI.get('/api/contacts/', (req, res) => {
-//   newDbConnection((collection) => {
-//     collection.find().toArray((error, doc) => {
-//       if (error) {
-//         console.log(error);
-//         res.send('Sorry. DB Error.');
-//       } else {
-//         res.send(doc);
-//       }
-//     });
-//   });
-// });
+// добавление таска
+restAPI.post('/api/tasks/', (req, res) => {
+  Tasks.find().sort({$natural:-1}).limit(1).exec((err, tasks) => {
+    if (err) console.log(err);
+    const id = (tasks.length === 0) ? 1 : tasks[0].id + 1;
+    const task = req.body.content;
+    const newTask = new Tasks({ id,
+                                name: task.name,
+                                desc: task.desc,
+                                status: task.status,
+                                user: task.user
+                              });
+    newTask.save((err, newTask) => {
+      if (err) {
+        console.log(`Cant connect to DB. Error: ${err}`);
+        res.send('Sorry. Cant connect to DB...');
+      } else {
+        res.send('ok');
+      }
+    });
+  });
+});
 
-// // удаление контакта
-// restAPI.delete('/api/contacts/:id', (req, res) => {
-//   newDbConnection((collection) => {
-//     collection.deleteOne({ id : `${req.params.id}` }, (err, result) => {
-//       if (err) {
-//         console.log(`Cant connect to DB. Error: ${err}`);
-//         res.send('Sorry. Cant connect to DB...');
-//       } else {
-//         res.send(result);
-//       }
-//     });
-//   });
-// });
+// список контактов
+restAPI.get('/api/users/', (req, res) => {
+  Users.find((err, doc) => {
+    if (err) {
+      console.log(err);
+      res.send('Sorry. DB Error.');
+    } else {
+      res.send(doc);
+    }
+  });
+});
 
-// // редактирование
-// restAPI.put('/api/contacts/:id', (req, res) => {
-//   const newData = {
-//     firstName: req.body.contact.fname,
-//     lastName: req.body.contact.lname,
-//     phone: req.body.contact.phone,
-//     id: req.params.id
-//   }
-//   newDbConnection((collection) => {
-//     collection.updateOne({ id : `${req.params.id}` }, newData, (err, result) => {
-//       if (err) {
-//         console.log(`Cant connect to DB. Error: ${err}`);
-//         res.send('Sorry. Cant connect to DB...');
-//       } else {
-//         res.send(result);
-//       }
-//     });
-//   });
-// });
+// список тасков
+restAPI.get('/api/tasks/', (req, res) => {
+  Tasks.aggregate([
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'user',
+        foreignField: 'id',
+        as: 'userInfo'
+      }
+    },
+    {
+      $project: { id: 1, name: 1, desc:1, status:1, userName: '$userInfo.name', userId: '$userInfo.id' }
+    }
+  ], (err, result) => {
+    res.send(result);
+  });
+});
+
+// удаление контакта
+restAPI.delete('/api/users/:id', (req, res) => {
+  Users.deleteOne({ id : `${req.params.id}` }, (err, result) => {
+    if (err) {
+      console.log(`Cant connect to DB. Error: ${err}`);
+      res.send('Sorry. Cant connect to DB...');
+    } else {
+      res.send('ok');
+    }
+  });
+});
+
+// удаление таска
+restAPI.delete('/api/tasks/:id', (req, res) => {
+  Tasks.deleteOne({ id : `${req.params.id}` }, (err, result) => {
+    if (err) {
+      console.log(`Cant connect to DB. Error: ${err}`);
+      res.send('Sorry. Cant connect to DB...');
+    } else {
+      res.send('ok');
+    }
+  });
+});
+
+// редактирование юзера
+restAPI.put('/api/users/:id', (req, res) => {
+  Users.updateOne({ id : `${req.body.id}` }, { name: req.body.name }, (err, result) => {
+    if (err) {
+      console.log(`Cant connect to DB. Error: ${err}`);
+      res.send('Sorry. Cant connect to DB...');
+    } else {
+      res.send(result);
+    }
+  });
+});
+
+// редактирование таска
+restAPI.put('/api/tasks/:id', (req, res) => {
+  console.log(req.body);
+  const data = { name: req.body.name,
+                 desc: req.body.desc,
+                 status: +req.body.status,
+                 user: +req.body.user
+                }
+  Tasks.updateOne({ id : `${req.params.id}` }, data, (err, result) => {
+    if (err) {
+      console.log(`Cant connect to DB. Error: ${err}`);
+      res.send('Sorry. Cant connect to DB...');
+    } else {
+      res.send('ok');
+    }
+  });
+});
 
 // //поиск
 // restAPI.get('/api/search/', (req, res) => {
