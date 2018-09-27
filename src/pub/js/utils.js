@@ -128,13 +128,13 @@ const getAlert = function (alertType) {
   };
   switch (alertType) {
     case 'add':
-      alertAction('alert-success', 'Well done!', 'You successfully add new contact.');
+      alertAction('alert-success', 'Well done!', 'You successfully add new item.');
       break;
     case 'del':
-      alertAction('alert-success', 'Well done!', 'Contact has been deleted');
+      alertAction('alert-success', 'Well done!', 'Item has been deleted');
       break;
     case 'edit':
-      alertAction('alert-success', 'Well done!', 'Contact has been edited');
+      alertAction('alert-success', 'Well done!', 'Item has been edited');
       break;
     default:
       alertAction('alert-danger', 'Error!', 'Sorry, application error.');
